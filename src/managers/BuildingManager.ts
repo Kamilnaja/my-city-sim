@@ -3,8 +3,14 @@ import { gridSettings } from "../scenes/gridSettings";
 import type { BuildingTypeConfig } from "../config/buildingTypes";
 import { Worker } from "../entities/Worker";
 import type { TreeManager } from "./TreeManager";
+import type { DeerManager } from "./DeerManager";
 import type { ResourceManager } from "./ResourceManager";
-import { createForesterBehavior, createWoodcutterBehavior } from "./WorkerBehaviors";
+import type { RiverManager } from "./RiverManager";
+import {
+  createForesterBehavior,
+  createWoodcutterBehavior,
+  createHuntsmanBehavior,
+} from "./WorkerBehaviors";
 
 export interface PlacedBuilding {
   gridX: number;
@@ -23,11 +29,14 @@ export class BuildingManager {
     scene: Phaser.Scene,
     treeManager: TreeManager,
     resourceManager: ResourceManager,
+    deerManager: DeerManager,
+    riverManager: RiverManager,
   ) {
     this.scene = scene;
     this.behaviors = {
-      forester: createForesterBehavior({ treeManager, buildingManager: this }),
-      woodcutter: createWoodcutterBehavior({ treeManager, resourceManager }),
+      forester: createForesterBehavior({ treeManager, buildingManager: this, riverManager }),
+      woodcutter: createWoodcutterBehavior({ treeManager, resourceManager, riverManager }),
+      hunter: createHuntsmanBehavior({ deerManager, resourceManager, riverManager }),
     };
   }
 

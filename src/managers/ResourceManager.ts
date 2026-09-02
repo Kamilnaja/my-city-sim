@@ -1,30 +1,32 @@
 import * as Phaser from "phaser";
 
+export type ResourceId = "wood" | "meat";
+
 export class ResourceManager {
   public readonly events = new Phaser.Events.EventEmitter();
-  private wood: number;
+  private amounts: Record<ResourceId, number>;
 
-  constructor(startingWood: number) {
-    this.wood = startingWood;
+  constructor(initial: Partial<Record<ResourceId, number>> = {}) {
+    this.amounts = { wood: 0, meat: 0, ...initial };
   }
 
-  getWood(): number {
-    return this.wood;
+  get(id: ResourceId): number {
+    return this.amounts[id];
   }
 
-  canAfford(cost: number): boolean {
-    return this.wood >= cost;
+  canAfford(id: ResourceId, cost: number): boolean {
+    return this.amounts[id] >= cost;
   }
 
-  spend(cost: number): boolean {
-    if (!this.canAfford(cost)) return false;
-    this.wood -= cost;
-    this.events.emit("change", this.wood);
+  spend(id: ResourceId, cost: number): boolean {
+    if (!this.canAfford(id, cost)) return false;
+    this.amounts[id] -= cost;
+    this.events.emit("change", id, this.amounts[id]);
     return true;
   }
 
-  addWood(amount: number): void {
-    this.wood += amount;
-    this.events.emit("change", this.wood);
+  add(id: ResourceId, amount: number): void {
+    this.amounts[id] += amount;
+    this.events.emit("change", id, this.amounts[id]);
   }
 }

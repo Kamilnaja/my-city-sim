@@ -86,11 +86,16 @@ export class TreeManager {
     this.trees.delete(this.key(tree.subX, tree.subY));
   }
 
-  /** Nearest mature, unreserved (or reserved by `worker`) tree within a pixel radius of a home point. */
+  /**
+   * Nearest mature, unreserved (or reserved by `worker`) tree within a pixel radius of a home
+   * point. `isBlocked(px, py)`, if given, excludes trees the worker can't actually path to
+   * (e.g. across an unbridged river) so a farther-but-reachable tree gets picked instead.
+   */
   findNearestAvailableTree(
     homePx: { x: number; y: number },
     radiusPx: number,
     worker: Worker,
+    isBlocked?: (px: number, py: number) => boolean,
   ): Tree | null {
     const now = this.scene.time.now;
     let best: Tree | null = null;
@@ -103,6 +108,7 @@ export class TreeManager {
       const dx = tree.container.x - homePx.x;
       const dy = tree.container.y - homePx.y;
       if (Math.abs(dx) > radiusPx || Math.abs(dy) > radiusPx) continue;
+      if (isBlocked && isBlocked(tree.container.x, tree.container.y)) continue;
 
       const dist = dx * dx + dy * dy;
       if (dist < bestDist) {

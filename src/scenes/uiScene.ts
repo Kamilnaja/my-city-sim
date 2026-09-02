@@ -1,6 +1,8 @@
 import * as Phaser from "phaser";
-import { BUILDING_LIST, type BuildingTypeConfig } from "../config/buildingTypes";
+import { BUILDING_LIST, BRIDGE_TOOL, type PlacementTool } from "../config/buildingTypes";
 import type { ResourceManager } from "../managers/ResourceManager";
+
+const TOOL_LIST: PlacementTool[] = [...BUILDING_LIST, BRIDGE_TOOL];
 
 const INFO_ROW_HEIGHT = 52;
 const BUTTON_ROW_HEIGHT = 74;
@@ -9,19 +11,20 @@ const PANEL_BG = 0x222222;
 const BUTTON_BG = 0x3a3a3a;
 const BUTTON_BG_ACTIVE = 0x4c8c4a;
 const DEFAULT_HINT =
-  "Wybierz budynek i kliknij na mapie. PPM na budynku go rozbiera (zwrot 30%).";
-const PLACED_HINT = "Budynek postawiony. Wybierz kolejny albo PPM/Esc, by anulować.";
+  "Wybierz budynek/most i kliknij na mapie. PPM go rozbiera (zwrot 30%).";
+const PLACED_HINT = "Postawiono. Wybierz kolejny element albo PPM/Esc, by anulować.";
 
 export class UIScene extends Phaser.Scene {
   private resourceManager!: ResourceManager;
-  private activeType: BuildingTypeConfig | null = null;
+  private activeType: PlacementTool | null = null;
   private lastHint = DEFAULT_HINT;
 
   private uiObjects: Phaser.GameObjects.GameObject[] = [];
   private woodText!: Phaser.GameObjects.Text;
+  private meatText!: Phaser.GameObjects.Text;
   private hintText!: Phaser.GameObjects.Text;
   private buttons: Array<{
-    type: BuildingTypeConfig;
+    type: PlacementTool;
     bg: Phaser.GameObjects.Rectangle;
     label: Phaser.GameObjects.Text;
   }> = [];
@@ -36,7 +39,7 @@ export class UIScene extends Phaser.Scene {
     this.buildUI();
     this.scale.on("resize", () => this.buildUI());
 
-    this.resourceManager.events.on("change", () => this.refreshWood());
+    this.resourceManager.events.on("change", () => this.refreshResources());
 
     this.game.events.on("placementCancelled", () => this.setActive(null));
     this.game.events.on("buildingPlaced", () => {
@@ -47,7 +50,7 @@ export class UIScene extends Phaser.Scene {
     });
     this.game.events.on(
       "buildingRemoved",
-      (type: BuildingTypeConfig, refund: number) => {
+      (type: PlacementTool, refund: number) => {
         this.lastHint = `Rozebrano: ${type.name} (+${refund} drewna).`;
         this.buildUI();
       },
@@ -79,7 +82,16 @@ export class UIScene extends Phaser.Scene {
       })
       .setScrollFactor(0);
     this.uiObjects.push(this.woodText);
-    this.refreshWood();
+
+    this.meatText = this.add
+      .text(20, infoRowTop + 6, "", {
+        fontSize: "18px",
+        color: "#e0a985",
+      })
+      .setScrollFactor(0);
+    this.uiObjects.push(this.meatText);
+
+    this.refreshResources();
 
     this.hintText = this.add
       .text(20, infoRowTop + 27, this.lastHint, {
@@ -91,7 +103,7 @@ export class UIScene extends Phaser.Scene {
     this.uiObjects.push(this.hintText);
 
     let left = 20;
-    for (const type of BUILDING_LIST) {
+    for (const type of TOOL_LIST) {
       const label = `${type.name}\n(${type.cost} drewna)`;
       const text = this.add
         .text(0, 0, label, {
@@ -129,11 +141,15 @@ export class UIScene extends Phaser.Scene {
     this.setActive(this.activeType);
   }
 
-  private refreshWood(): void {
-    this.woodText.setText(`🪵 Drewno: ${this.resourceManager.getWood()}`);
+  private refreshResources(): void {
+    this.woodText.setText(`🪵 Drewno: ${this.resourceManager.get("wood")}`);
+    this.meatText.setText(`🍖 Mięso: ${this.resourceManager.get("meat")}`);
+    // Positioned after refreshing text, so it always clears the wood counter's
+    // actual current width instead of an assumed fixed offset.
+    this.meatText.setX(this.woodText.x + this.woodText.width + 24);
   }
 
-  private setActive(type: BuildingTypeConfig | null): void {
+  private setActive(type: PlacementTool | null): void {
     this.activeType = type;
     for (const btn of this.buttons) {
       btn.bg.setFillStyle(btn.type === type ? BUTTON_BG_ACTIVE : BUTTON_BG);
