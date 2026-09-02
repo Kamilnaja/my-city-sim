@@ -1,12 +1,13 @@
 import * as Phaser from "phaser";
 import { gridSettings, tileCenterPx } from "../scenes/gridSettings";
+import { RIVER_SETTINGS } from "../config/gameSettings";
 
 const WATER_COLOR = 0x2f6f9e;
 const BRIDGE_COLOR = 0x8a6a4a;
 const SAMPLE_STEP_PX = gridSettings.TILE_SIZE / 4;
-// The river only occupies half its tile's width visually; it still blocks the whole tile
-// for placement/pathing (that grid stays simple), this just narrows the drawn water strip.
-const RIVER_WIDTH = gridSettings.TILE_SIZE / 2;
+// The river only occupies a fraction of its tile's width visually; it still blocks the
+// whole tile for placement/pathing (that grid stays simple), this just narrows the drawn strip.
+const RIVER_WIDTH = gridSettings.TILE_SIZE * RIVER_SETTINGS.widthRatio;
 
 type Point = { x: number; y: number };
 
@@ -162,8 +163,13 @@ export class RiverManager {
     return true;
   }
 
-  /** Samples a straight pixel-space segment; true if it crosses river water with no bridge. */
-  segmentCrossesRiver(x1: number, y1: number, x2: number, y2: number): boolean {
+  private sampleSegment(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    onSample: (gx: number, gy: number) => boolean,
+  ): boolean {
     const dist = Math.hypot(x2 - x1, y2 - y1);
     const steps = Math.max(1, Math.ceil(dist / SAMPLE_STEP_PX));
 
@@ -174,9 +180,37 @@ export class RiverManager {
       const gx = Math.floor(x / gridSettings.TILE_SIZE);
       const gy = Math.floor(y / gridSettings.TILE_SIZE);
 
-      if (this.isRiver(gx, gy) && !this.hasBridge(gx, gy)) return true;
+      if (onSample(gx, gy)) return true;
     }
 
     return false;
+  }
+
+  /** Samples a straight pixel-space segment; true if it crosses river water with no bridge. */
+  segmentCrossesRiver(x1: number, y1: number, x2: number, y2: number): boolean {
+    return this.sampleSegment(
+      x1,
+      y1,
+      x2,
+      y2,
+      (gx, gy) => this.isRiver(gx, gy) && !this.hasBridge(gx, gy),
+    );
+  }
+
+  /**
+   * True if a straight pixel-space segment passes through this exact tile — used to check
+   * whether a worker mid-route still needs a bridge before it's allowed to be demolished
+   * (workers pick their route once and never re-check it, so pulling a bridge out from
+   * under one mid-crossing would otherwise strand it on open water).
+   */
+  segmentPassesThroughTile(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    gridX: number,
+    gridY: number,
+  ): boolean {
+    return this.sampleSegment(x1, y1, x2, y2, (gx, gy) => gx === gridX && gy === gridY);
   }
 }

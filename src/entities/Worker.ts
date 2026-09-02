@@ -1,5 +1,6 @@
 import * as Phaser from "phaser";
 import { tileCenterPx } from "../scenes/gridSettings";
+import { WORKER_SETTINGS } from "../config/gameSettings";
 import type { BuildingTypeConfig } from "../config/buildingTypes";
 
 const WorkerState = {
@@ -25,14 +26,16 @@ export interface WorkerBehavior {
   onCancel?(worker: Worker, target: WorkTarget): void;
 }
 
-const SPEED_PX_PER_SEC = 90;
-const ARRIVE_THRESHOLD = 3;
-const IDLE_RETRY_MS = 1000;
-
 export class Worker {
   public readonly homeTile: { x: number; y: number };
   public readonly config: BuildingTypeConfig;
   public readonly container: Phaser.GameObjects.Container;
+
+  /** Fixed world-pixel point this worker walks home to — used to check whether a piece of
+   * infrastructure (a bridge) it's currently relying on is safe to demolish. */
+  get homePosition(): { x: number; y: number } {
+    return this.homePx;
+  }
 
   private behavior: WorkerBehavior;
   private state: WorkerState = WorkerState.IDLE;
@@ -47,13 +50,14 @@ export class Worker {
     homeGridY: number,
     config: BuildingTypeConfig,
     behavior: WorkerBehavior,
+    homeOffset: { x: number; y: number } = { x: 0, y: 20 },
   ) {
     this.homeTile = { x: homeGridX, y: homeGridY };
     this.config = config;
     this.behavior = behavior;
 
     const home = tileCenterPx(homeGridX, homeGridY);
-    this.homePx = { x: home.x, y: home.y + 20 };
+    this.homePx = { x: home.x + homeOffset.x, y: home.y + homeOffset.y };
 
     this.container = scene.add.container(this.homePx.x, this.homePx.y);
     const body = scene.add.circle(0, 0, 8, config.workerColor);
@@ -67,12 +71,12 @@ export class Worker {
     const dy = px.y - this.container.y;
     const dist = Math.hypot(dx, dy);
 
-    if (dist <= ARRIVE_THRESHOLD) {
+    if (dist <= WORKER_SETTINGS.arriveThresholdPx) {
       this.container.setPosition(px.x, px.y);
       return true;
     }
 
-    const step = (SPEED_PX_PER_SEC * deltaMs) / 1000;
+    const step = (WORKER_SETTINGS.speedPxPerSec * deltaMs) / 1000;
     const t = Math.min(1, step / dist);
     this.container.x += dx * t;
     this.container.y += dy * t;
@@ -88,7 +92,7 @@ export class Worker {
 
         const target = this.behavior.findTarget(this);
         if (!target) {
-          this.idleTimer = IDLE_RETRY_MS;
+          this.idleTimer = WORKER_SETTINGS.idleRetryMs;
           return;
         }
         this.currentTarget = target;

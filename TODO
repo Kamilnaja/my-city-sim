@@ -1,12 +1,40 @@
 Villate sim:
  [] można poprawiać statystyki
  [] wytwarzanie narzędzi
- [] animacja zwierząt
  [] anteny
  [] cele
- [] most i rzeka
+ [] jezioro
  [] sprite dla ludków
  [] wilki > zjadanie ludzi 
  [] chatka rybaka
  [] chatka rzemieślnika 
- [] jelonek ruch
+ [] magazyn na produkty
+ [] stawianie budynków na drzewach
+ [] statystyki
+ [] postawienie budynku powinno troche zająć czasu
+ [] kamień 
+ [] ukryj siatkę
+ [] co można zrobić z jelonka
+ [] glina
+ [] więcej pracowników w chatkach
+ [] tryb szybszy
+ [] tryb ukryj ludki
+ [] odnawianie drzewa automatyczne co jakiś czas 
+ [] jagody / maliny
+ [] woda 
+ [] cykl drzewa, pień
+ [] zapisz prędkość w LS
+ [] płot przeciw zwierzynie
+ [] logowanie co się dzieje 
+ [] zoom
+ [] full screen
+ [] kliknij upgrade 
+ [] inicjalny stan deweloperski
+ [] po upgrade, można zatrudnić dodatkowe osoby, ale jest tylko jedno łózko. Trzeba dodać domek. Ma też więcej miejsca
+ [] zacznij grę z jedną chatką drwala zawsze
+Statystyki:
+ [] ile osób
+Archive:
+  [x] most i rzeka @project(Villate sim)
+  [x] animacja zwierząt @project(Villate sim)
+  [x] jelonek ruch @project(Villate sim)

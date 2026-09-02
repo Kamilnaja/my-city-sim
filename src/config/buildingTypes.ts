@@ -20,7 +20,9 @@ export const BUILDING_TYPES: Record<BuildingId, BuildingTypeConfig> = {
     roofColor: 0x1f4d2e,
     workerColor: 0xaed581,
     workRadiusTiles: 6,
-    workDurationMs: 2500,
+    // Longer than the other roles: the forester now always plants the nearest empty
+    // spot, so with a short duration it was refilling the area around the hut too fast.
+    workDurationMs: 5500,
   },
   woodcutter: {
     id: "woodcutter",
@@ -45,6 +47,18 @@ export const BUILDING_TYPES: Record<BuildingId, BuildingTypeConfig> = {
 };
 
 export const BUILDING_LIST = Object.values(BUILDING_TYPES);
+
+/**
+ * Real art for building types that have it, one per upgrade level from level 1 up (index 0 =
+ * level 1, ...) — level 0 (the freshly-placed hut, before any upgrade) reuses the first
+ * texture, since there's no separate "just placed" art. A building type with no entry here
+ * just stays procedural at every level. These textures are registered by GameScene from
+ * src/assets/*.jpg once cut out to a real alpha channel (see src/utils/imageProcessing.ts).
+ */
+export const BUILDING_LEVEL_TEXTURE_KEYS: Partial<Record<BuildingId, string[]>> = {
+  forester: ["lesnik_1", "lesnik_2", "lesnik_3"],
+  woodcutter: ["drwal_1", "drwal_2", "drwal_3"],
+};
 
 export interface BridgeToolConfig {
   id: "bridge";

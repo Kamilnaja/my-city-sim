@@ -56,11 +56,12 @@ export class GridManager {
     ) {
       let color = 0xffffff;
       let alpha = 0.15;
+      let valid = true;
 
       if (this.placementValidator) {
-        const valid = this.placementValidator(gridX, gridY);
-        color = valid ? 0x00ff00 : 0xff3333;
-        alpha = 0.4;
+        valid = this.placementValidator(gridX, gridY);
+        color = valid ? 0x00ff00 : 0xff0000;
+        alpha = valid ? 0.4 : 0.55;
       }
 
       this.hoverGraphics.fillStyle(color, alpha);
@@ -70,6 +71,18 @@ export class GridManager {
         gridSettings.TILE_SIZE,
         gridSettings.TILE_SIZE,
       );
+
+      if (this.placementValidator && !valid) {
+        // A flat tint over grass reads as muddy brown rather than "blocked" — an
+        // outline makes the invalid state unambiguous regardless of what's underneath.
+        this.hoverGraphics.lineStyle(3, 0xff0000, 0.9);
+        this.hoverGraphics.strokeRect(
+          gridX * gridSettings.TILE_SIZE + 1.5,
+          gridY * gridSettings.TILE_SIZE + 1.5,
+          gridSettings.TILE_SIZE - 3,
+          gridSettings.TILE_SIZE - 3,
+        );
+      }
     }
   }
 }
