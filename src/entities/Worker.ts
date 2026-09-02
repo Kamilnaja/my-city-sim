@@ -1,5 +1,5 @@
 import * as Phaser from "phaser";
-import { gridSettings } from "../scenes/gridSettings";
+import { tileCenterPx } from "../scenes/gridSettings";
 import type { BuildingTypeConfig } from "../config/buildingTypes";
 
 const WorkerState = {
@@ -11,8 +11,10 @@ const WorkerState = {
 type WorkerState = (typeof WorkerState)[keyof typeof WorkerState];
 
 export interface WorkTarget {
-  tileX: number;
-  tileY: number;
+  /** Absolute world pixel position — behaviors own their coordinate system (buildings vs.
+   * the finer tree sub-grid), so the worker just walks to a point, it doesn't know tiles. */
+  px: number;
+  py: number;
   payload?: unknown;
 }
 
@@ -50,23 +52,14 @@ export class Worker {
     this.config = config;
     this.behavior = behavior;
 
-    this.homePx = {
-      x: homeGridX * gridSettings.TILE_SIZE + gridSettings.TILE_SIZE / 2,
-      y: homeGridY * gridSettings.TILE_SIZE + gridSettings.TILE_SIZE / 2 + 20,
-    };
+    const home = tileCenterPx(homeGridX, homeGridY);
+    this.homePx = { x: home.x, y: home.y + 20 };
 
     this.container = scene.add.container(this.homePx.x, this.homePx.y);
     const body = scene.add.circle(0, 0, 8, config.workerColor);
     const outline = scene.add.circle(0, 0, 8).setStrokeStyle(1.5, 0x000000, 0.4);
     this.container.add([body, outline]);
     this.container.setDepth(this.homePx.y);
-  }
-
-  private tilePx(tileX: number, tileY: number): { x: number; y: number } {
-    return {
-      x: tileX * gridSettings.TILE_SIZE + gridSettings.TILE_SIZE / 2,
-      y: tileY * gridSettings.TILE_SIZE + gridSettings.TILE_SIZE / 2,
-    };
   }
 
   private moveToward(px: { x: number; y: number }, deltaMs: number): boolean {
@@ -109,7 +102,7 @@ export class Worker {
           return;
         }
         const arrived = this.moveToward(
-          this.tilePx(this.currentTarget.tileX, this.currentTarget.tileY),
+          { x: this.currentTarget.px, y: this.currentTarget.py },
           deltaMs,
         );
         if (arrived) {

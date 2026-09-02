@@ -1,5 +1,13 @@
 import * as Phaser from "phaser";
-import { gridSettings } from "../scenes/gridSettings";
+import {
+  gridSettings,
+  SUB_TILE_SIZE,
+  SUB_TILES_PER_TILE,
+  TREE_GRID_WIDTH,
+  TREE_GRID_HEIGHT,
+  tileCenterPx,
+  subTileCenterPx,
+} from "../scenes/gridSettings";
 import type { Worker, WorkerBehavior, WorkTarget } from "../entities/Worker";
 import type { Tree } from "./TreeManager";
 import type { TreeManager } from "./TreeManager";
@@ -8,10 +16,8 @@ import type { BuildingManager } from "./BuildingManager";
 
 const MAX_SPOT_ATTEMPTS = 20;
 
-function inBounds(x: number, y: number): boolean {
-  return (
-    x >= 0 && y >= 0 && x < gridSettings.GRID_WIDTH && y < gridSettings.GRID_HEIGHT
-  );
+function inTreeGridBounds(subX: number, subY: number): boolean {
+  return subX >= 0 && subY >= 0 && subX < TREE_GRID_WIDTH && subY < TREE_GRID_HEIGHT;
 }
 
 export function createForesterBehavior(deps: {
@@ -20,25 +26,34 @@ export function createForesterBehavior(deps: {
 }): WorkerBehavior {
   return {
     findTarget(worker: Worker): WorkTarget | null {
-      const radius = worker.config.workRadiusTiles;
+      const home = tileCenterPx(worker.homeTile.x, worker.homeTile.y);
+      const radiusPx = worker.config.workRadiusTiles * gridSettings.TILE_SIZE;
 
       for (let attempt = 0; attempt < MAX_SPOT_ATTEMPTS; attempt++) {
-        const x = worker.homeTile.x + Phaser.Math.Between(-radius, radius);
-        const y = worker.homeTile.y + Phaser.Math.Between(-radius, radius);
+        const px = home.x + Phaser.Math.Between(-radiusPx, radiusPx);
+        const py = home.y + Phaser.Math.Between(-radiusPx, radiusPx);
 
-        if (!inBounds(x, y)) continue;
-        if (deps.treeManager.hasTreeAt(x, y)) continue;
-        if (deps.buildingManager.isTileOccupied(x, y)) continue;
+        const subX = Math.floor(px / SUB_TILE_SIZE);
+        const subY = Math.floor(py / SUB_TILE_SIZE);
 
-        return { tileX: x, tileY: y };
+        if (!inTreeGridBounds(subX, subY)) continue;
+        if (deps.treeManager.hasTreeAt(subX, subY)) continue;
+
+        const parentGridX = Math.floor(subX / SUB_TILES_PER_TILE);
+        const parentGridY = Math.floor(subY / SUB_TILES_PER_TILE);
+        if (deps.buildingManager.isTileOccupied(parentGridX, parentGridY)) continue;
+
+        const center = subTileCenterPx(subX, subY);
+        return { px: center.x, py: center.y, payload: { subX, subY } };
       }
 
       return null;
     },
 
     onWorkComplete(_worker: Worker, target: WorkTarget): void {
-      if (!deps.treeManager.hasTreeAt(target.tileX, target.tileY)) {
-        deps.treeManager.plantTree(target.tileX, target.tileY);
+      const { subX, subY } = target.payload as { subX: number; subY: number };
+      if (!deps.treeManager.hasTreeAt(subX, subY)) {
+        deps.treeManager.plantTree(subX, subY);
       }
     },
   };
@@ -50,21 +65,19 @@ export function createWoodcutterBehavior(deps: {
 }): WorkerBehavior {
   return {
     findTarget(worker: Worker): WorkTarget | null {
-      const tree = deps.treeManager.findNearestAvailableTree(
-        worker.homeTile.x,
-        worker.homeTile.y,
-        worker.config.workRadiusTiles,
-        worker,
-      );
+      const home = tileCenterPx(worker.homeTile.x, worker.homeTile.y);
+      const radiusPx = worker.config.workRadiusTiles * gridSettings.TILE_SIZE;
+
+      const tree = deps.treeManager.findNearestAvailableTree(home, radiusPx, worker);
       if (!tree) return null;
 
       tree.reservedBy = worker;
-      return { tileX: tree.gridX, tileY: tree.gridY, payload: tree };
+      return { px: tree.container.x, py: tree.container.y, payload: tree };
     },
 
     onWorkComplete(_worker: Worker, target: WorkTarget): void {
       const tree = target.payload as Tree;
-      if (deps.treeManager.hasTreeAt(tree.gridX, tree.gridY)) {
+      if (deps.treeManager.hasTreeAt(tree.subX, tree.subY)) {
         deps.treeManager.removeTree(tree);
         deps.resourceManager.addWood(1);
       }

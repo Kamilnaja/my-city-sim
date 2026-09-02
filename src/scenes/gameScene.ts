@@ -1,5 +1,5 @@
 import * as Phaser from "phaser";
-import { gridSettings } from "./gridSettings";
+import { gridSettings, TREE_GRID_WIDTH, TREE_GRID_HEIGHT } from "./gridSettings";
 import { GridManager } from "../managers/GridManager";
 import { TreeManager } from "../managers/TreeManager";
 import { BuildingManager } from "../managers/BuildingManager";
@@ -7,7 +7,8 @@ import { ResourceManager } from "../managers/ResourceManager";
 import type { BuildingTypeConfig } from "../config/buildingTypes";
 
 const STARTING_WOOD = 20;
-const INITIAL_TREE_COUNT = 45;
+// Trees live on a 2x2-per-tile sub-grid, so scale the count up to keep the same forest density.
+const INITIAL_TREE_COUNT = 180;
 const DEMOLISH_REFUND_RATIO = 0.3;
 
 export class GameScene extends Phaser.Scene {
@@ -75,8 +76,8 @@ export class GameScene extends Phaser.Scene {
 
     while (planted < INITIAL_TREE_COUNT && attempts < INITIAL_TREE_COUNT * 20) {
       attempts++;
-      const x = Phaser.Math.Between(0, gridSettings.GRID_WIDTH - 1);
-      const y = Phaser.Math.Between(0, gridSettings.GRID_HEIGHT - 1);
+      const x = Phaser.Math.Between(0, TREE_GRID_WIDTH - 1);
+      const y = Phaser.Math.Between(0, TREE_GRID_HEIGHT - 1);
 
       if (this.treeManager.hasTreeAt(x, y)) continue;
 
@@ -87,7 +88,7 @@ export class GameScene extends Phaser.Scene {
 
   private canPlaceAt(type: BuildingTypeConfig, gridX: number, gridY: number): boolean {
     if (this.buildingManager.isTileOccupied(gridX, gridY)) return false;
-    if (this.treeManager.hasTreeAt(gridX, gridY)) return false;
+    if (this.treeManager.hasAnyTreeInBuildingTile(gridX, gridY)) return false;
     if (!this.resourceManager.canAfford(type.cost)) return false;
     return true;
   }
