@@ -12,6 +12,7 @@ import {
   createForesterBehavior,
   createWoodcutterBehavior,
   createHuntsmanBehavior,
+  createFishermanBehavior,
   type HuntsmanDeps,
 } from "./WorkerBehaviors";
 
@@ -72,6 +73,7 @@ export class BuildingManager {
       forester: createForesterBehavior({ treeManager, buildingManager: this, riverManager }),
       woodcutter: createWoodcutterBehavior({ treeManager, resourceManager, riverManager }),
       hunter: createHuntsmanBehavior(this.huntsmanDeps),
+      fisherman: createFishermanBehavior({ resourceManager, riverManager }),
     };
   }
 

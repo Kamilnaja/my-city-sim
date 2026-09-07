@@ -1,4 +1,4 @@
-export type BuildingId = "woodcutter" | "forester" | "hunter";
+export type BuildingId = "woodcutter" | "forester" | "hunter" | "fisherman";
 
 export interface BuildingTypeConfig {
   id: BuildingId;
@@ -42,6 +42,16 @@ export const BUILDING_TYPES: Record<BuildingId, BuildingTypeConfig> = {
     roofColor: 0x3b2f2f,
     workerColor: 0xb33a3a,
     workRadiusTiles: 9,
+    workDurationMs: 3000,
+  },
+  fisherman: {
+    id: "fisherman",
+    name: "Chatka Rybaka",
+    cost: 8,
+    color: 0x8b7355,
+    roofColor: 0x315f78,
+    workerColor: 0x6fc3df,
+    workRadiusTiles: 1,
     workDurationMs: 3000,
   },
 };

@@ -273,6 +273,7 @@ export class GameScene extends Phaser.Scene {
     if (this.buildingManager.isTileOccupied(gridX, gridY)) return false;
     if (this.treeManager.hasAnyTreeInBuildingTile(gridX, gridY)) return false;
     if (this.riverManager.isRiver(gridX, gridY)) return false;
+    if (tool.id === "fisherman" && !this.riverManager.isNearRiver(gridX, gridY)) return false;
     if (!this.resourceManager.canAfford("wood", tool.cost)) return false;
     return true;
   }
