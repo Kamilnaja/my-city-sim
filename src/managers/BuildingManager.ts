@@ -322,4 +322,8 @@ export class BuildingManager {
   getBuildingCount(): number {
     return this.buildings.size;
   }
+
+  getWorkerCount(): number {
+    return this.getActiveWorkers().length;
+  }
 }

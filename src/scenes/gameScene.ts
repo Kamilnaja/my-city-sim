@@ -155,6 +155,13 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.treeManager.updateStumpRegrowth(scaledDelta);
+    this.game.events.emit("statisticsUpdated", {
+      buildings: this.buildingManager.getBuildingCount(),
+      meat: this.resourceManager.get("meat"),
+      people: this.buildingManager.getWorkerCount(),
+      deer: this.deerManager.count,
+      wolves: this.wolfManager.count,
+    });
   }
 
   private tryNaturalTreeGrowth(): void {
