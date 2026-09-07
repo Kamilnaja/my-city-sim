@@ -197,3 +197,39 @@ export function createHuntsmanBehavior(deps: HuntsmanDeps): WorkerBehavior {
     },
   };
 }
+
+export function createFishermanBehavior(deps: {
+  resourceManager: ResourceManager;
+  riverManager: RiverManager;
+}): WorkerBehavior {
+  return {
+    findTarget(worker: Worker): WorkTarget | null {
+      const home = tileCenterPx(worker.homeTile.x, worker.homeTile.y);
+      let closest: { px: number; py: number; distanceSq: number } | null = null;
+
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dy = -1; dy <= 1; dy++) {
+          if (dx === 0 && dy === 0) continue;
+          const riverX = worker.homeTile.x + dx;
+          const riverY = worker.homeTile.y + dy;
+          if (!deps.riverManager.isRiver(riverX, riverY)) continue;
+
+          // Fish from the dry side of the bank rather than walking onto the water tile.
+          const river = tileCenterPx(riverX, riverY);
+          const px = home.x + (river.x - home.x) * 0.45;
+          const py = home.y + (river.y - home.y) * 0.45;
+          const distanceSq = (px - home.x) ** 2 + (py - home.y) ** 2;
+          if (!closest || distanceSq < closest.distanceSq) {
+            closest = { px, py, distanceSq };
+          }
+        }
+      }
+
+      return closest ? { px: closest.px, py: closest.py } : null;
+    },
+
+    onWorkComplete(): void {
+      deps.resourceManager.add("meat", RESOURCE_SETTINGS.meatPerFish);
+    },
+  };
+}

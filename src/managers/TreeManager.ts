@@ -67,8 +67,7 @@ export class TreeManager {
     return this.trees.get(this.key(subX, subY));
   }
 
-  /** True if any of the (SUB_TILES_PER_TILE)^2 slots inside a building tile holds a growing
-   * or mature tree — a bare stump doesn't block building, per hasAnyTreeInBuildingTile's callers. */
+  /** True if any of the (SUB_TILES_PER_TILE)^2 slots inside a building tile holds a tree. */
   hasAnyTreeInBuildingTile(gridX: number, gridY: number): boolean {
     const baseX = gridX * SUB_TILES_PER_TILE;
     const baseY = gridY * SUB_TILES_PER_TILE;
@@ -83,17 +82,15 @@ export class TreeManager {
     return false;
   }
 
-  /** Destroys any stumps under a building tile — called once a building is actually placed there. */
-  clearStumpsInBuildingTile(gridX: number, gridY: number): void {
+  /** Destroys any trees under a building tile once a building is actually placed there. */
+  clearTreesInBuildingTile(gridX: number, gridY: number): void {
     const baseX = gridX * SUB_TILES_PER_TILE;
     const baseY = gridY * SUB_TILES_PER_TILE;
 
     for (let dx = 0; dx < SUB_TILES_PER_TILE; dx++) {
       for (let dy = 0; dy < SUB_TILES_PER_TILE; dy++) {
         const tree = this.getTreeAt(baseX + dx, baseY + dy);
-        if (tree && tree.state === "stump") {
-          this.removeTree(tree);
-        }
+        if (tree) this.removeTree(tree);
       }
     }
   }

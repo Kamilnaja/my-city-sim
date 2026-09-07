@@ -122,6 +122,16 @@ export class RiverManager {
     return this.riverTiles.has(this.key(gridX, gridY));
   }
 
+  isNearRiver(gridX: number, gridY: number): boolean {
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        if (dx === 0 && dy === 0) continue;
+        if (this.isRiver(gridX + dx, gridY + dy)) return true;
+      }
+    }
+    return false;
+  }
+
   hasBridge(gridX: number, gridY: number): boolean {
     return this.bridgeTiles.has(this.key(gridX, gridY));
   }
@@ -129,6 +139,17 @@ export class RiverManager {
   /** True where a worker or a building's footprint can actually sit — dry land, or a bridged river tile. */
   isPassable(gridX: number, gridY: number): boolean {
     return !this.isRiver(gridX, gridY) || this.hasBridge(gridX, gridY);
+  }
+
+  private bridgeRotation(gridX: number, gridY: number): number {
+    const pathIndex = this.riverPath.findIndex((point) => point.x === gridX && point.y === gridY);
+    if (pathIndex < 0 || this.riverPath.length < 2) return 0;
+
+    const previous = this.riverPath[Math.max(0, pathIndex - 1)];
+    const next = this.riverPath[Math.min(this.riverPath.length - 1, pathIndex + 1)];
+    const flowX = next.x - previous.x;
+    const flowY = next.y - previous.y;
+    return Math.atan2(flowY, flowX);
   }
 
   buildBridge(gridX: number, gridY: number): boolean {
@@ -141,10 +162,11 @@ export class RiverManager {
     const planks = this.scene.add.rectangle(
       0,
       0,
-      gridSettings.TILE_SIZE * 0.9,
       gridSettings.TILE_SIZE * 0.55,
+      gridSettings.TILE_SIZE * 0.9,
       BRIDGE_COLOR,
     );
+    planks.setRotation(this.bridgeRotation(gridX, gridY));
     container.add(planks);
     container.setDepth(py);
     this.bridgeSprites.set(this.key(gridX, gridY), container);

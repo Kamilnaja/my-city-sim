@@ -11,6 +11,7 @@ export const RESOURCE_SETTINGS = {
   /** Fraction of a building's cost refunded when it's demolished. */
   demolishRefundRatio: 0.3,
   meatPerHunt: 3,
+  meatPerFish: 2,
 };
 
 export const WORKER_SETTINGS = {
