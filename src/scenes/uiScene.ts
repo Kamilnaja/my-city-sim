@@ -15,6 +15,10 @@ const BUTTON_BG_ACTIVE = 0x4c8c4a;
 const SPEED_BTN_WIDTH = 64;
 const SPEED_BTN_HEIGHT = 36;
 const SPEED_BTN_MARGIN = 12;
+const STATS_BTN_WIDTH = 120;
+const STATS_BTN_HEIGHT = 36;
+const STATS_PANEL_WIDTH = 260;
+const STATS_PANEL_HEIGHT = 156;
 const DEFAULT_HINT =
   "Wybierz budynek/most i kliknij na mapie. PPM go rozbiera (zwrot 30%). LPM na budynku go zaznacza.";
 const PLACED_HINT = "Postawiono. Wybierz kolejny element albo PPM/Esc, by anulować.";
@@ -28,6 +32,14 @@ interface SelectedBuildingInfo {
   upgradeCost: number | null;
 }
 
+interface StatisticsInfo {
+  buildings: number;
+  meat: number;
+  people: number;
+  deer: number;
+  wolves: number;
+}
+
 const SELECTION_PANEL_WIDTH = 240;
 const SELECTION_PANEL_HEIGHT = 112;
 const SELECTION_PANEL_MARGIN = 12;
@@ -38,11 +50,20 @@ export class UIScene extends Phaser.Scene {
   private lastHint = DEFAULT_HINT;
   private speedIndex = 0;
   private selectedInfo: SelectedBuildingInfo | null = null;
+  private statisticsVisible = false;
+  private statistics: StatisticsInfo = {
+    buildings: 0,
+    meat: 0,
+    people: 0,
+    deer: 0,
+    wolves: 0,
+  };
 
   private uiObjects: Phaser.GameObjects.GameObject[] = [];
   private woodText!: Phaser.GameObjects.Text;
   private meatText!: Phaser.GameObjects.Text;
   private hintText!: Phaser.GameObjects.Text;
+  private statisticsText?: Phaser.GameObjects.Text;
   private buttons: Array<{
     type: PlacementTool;
     bg: Phaser.GameObjects.Rectangle;
@@ -96,12 +117,17 @@ export class UIScene extends Phaser.Scene {
       this.lastHint = "Za mało drewna na rozbudowę.";
       this.buildUI();
     });
+    this.game.events.on("statisticsUpdated", (statistics: StatisticsInfo) => {
+      this.statistics = statistics;
+      this.refreshStatistics();
+    });
   }
 
   private buildUI(): void {
     for (const obj of this.uiObjects) obj.destroy();
     this.uiObjects = [];
     this.buttons = [];
+    this.statisticsText = undefined;
 
     const { width, height } = this.scale;
 
@@ -180,8 +206,65 @@ export class UIScene extends Phaser.Scene {
     }
 
     this.setActive(this.activeType);
+    this.buildStatisticsButton(width);
     this.buildSpeedButton(width);
+    if (this.statisticsVisible) this.buildStatisticsPanel(width);
     if (this.selectedInfo) this.buildSelectionPanel(this.selectedInfo);
+  }
+
+  private buildStatisticsButton(screenWidth: number): void {
+    const speedX = screenWidth - SPEED_BTN_MARGIN - SPEED_BTN_WIDTH / 2;
+    const x = speedX - SPEED_BTN_WIDTH / 2 - 8 - STATS_BTN_WIDTH / 2;
+    const y = SPEED_BTN_MARGIN + STATS_BTN_HEIGHT / 2;
+    const bg = this.add
+      .rectangle(x, y, STATS_BTN_WIDTH, STATS_BTN_HEIGHT, this.statisticsVisible ? BUTTON_BG_ACTIVE : BUTTON_BG)
+      .setScrollFactor(0)
+      .setInteractive({ useHandCursor: true });
+    const label = this.add
+      .text(x, y, "Statistics", { fontSize: "14px", color: "#ffffff" })
+      .setOrigin(0.5)
+      .setScrollFactor(0);
+
+    bg.on("pointerdown", () => {
+      this.statisticsVisible = !this.statisticsVisible;
+      this.buildUI();
+    });
+
+    this.uiObjects.push(bg, label);
+  }
+
+  private buildStatisticsPanel(screenWidth: number): void {
+    const x = screenWidth - STATS_PANEL_WIDTH - 12;
+    const y = 60;
+    const bg = this.add
+      .rectangle(x, y, STATS_PANEL_WIDTH, STATS_PANEL_HEIGHT, PANEL_BG, 0.95)
+      .setOrigin(0, 0)
+      .setScrollFactor(0)
+      .setStrokeStyle(1, 0x555555);
+    this.statisticsText = this.add.text(
+      x + 14,
+      y + 12,
+      "",
+      { fontSize: "14px", color: "#ffffff", lineSpacing: 6 },
+    );
+    this.statisticsText.setScrollFactor(0);
+    this.uiObjects.push(bg, this.statisticsText);
+    this.refreshStatistics();
+  }
+
+  private refreshStatistics(): void {
+    if (!this.statisticsText) return;
+    this.statisticsText.setText(
+      [
+        "Statistics",
+        `Buildings: ${this.statistics.buildings}`,
+        `Meat: ${this.statistics.meat}`,
+        `People: ${this.statistics.people}`,
+        `Animals: ${this.statistics.deer + this.statistics.wolves}`,
+        `  Deer: ${this.statistics.deer}`,
+        `  Wolves: ${this.statistics.wolves}`,
+      ].join("\n"),
+    );
   }
 
   private buildSelectionPanel(info: SelectedBuildingInfo): void {
