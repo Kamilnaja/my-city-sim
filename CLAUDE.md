@@ -14,9 +14,10 @@ Note: game UI text, some in-code comments, and `TODO` are written in Polish.
 npm run dev       # start Vite dev server with hot reload
 npm run build     # tsc typecheck (noEmit) + vite production build to dist/
 npm run preview   # serve the production build locally
+npm test          # run the Vitest unit suite (src/**/*.test.ts)
 ```
 
-There is no lint script and no automated test runner configured (no unit/e2e test framework in `package.json`). `scripts/bridge-removal-test.mjs` is an ad-hoc Playwright scenario script from past manual debugging (bridge demolition mid-crossing); it expects a `window.__debugGame` hook that is **not** currently wired up in `src/main.ts`, and `playwright` is not a listed dependency — treat it as a reference for how to drive a manual repro, not a runnable test.
+There is no lint script. Unit tests use **Vitest** with a `jsdom` environment — importing `phaser` at all (even just for `Phaser.Events.EventEmitter`) touches `window` and does canvas feature-detection at module-init time, so the `jsdom` environment plus the `canvas` npm package (devDependency) are both required for the real `phaser` package to import cleanly under Node; see `vitest.config.ts`. Booting an actual headless `Phaser.Game` inside `jsdom` hangs (its boot lifecycle never resolves), so tests instead construct managers/entities against lightweight hand-rolled stand-ins for the `scene.add.*`/`scene.tweens.add` API surface — see `src/testUtils/fakeScene.ts`. `RiverManager`'s procedural generation is otherwise-random (`Phaser.Math.Between`/`GetRandom`, both `Math.random()`-based); tests pin `Math.random` to `0` to get a fully deterministic river path, documented inline in `RiverManager.test.ts`. `scripts/bridge-removal-test.mjs` is a separate, older ad-hoc Playwright scenario script from past manual debugging (bridge demolition mid-crossing); it expects a `window.__debugGame` hook that is **not** currently wired up in `src/main.ts`, and `playwright` is not a listed dependency — treat it as a reference for how to drive a manual repro, not a runnable test.
 
 ## Architecture
 
