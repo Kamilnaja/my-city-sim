@@ -271,7 +271,6 @@ export class GameScene extends Phaser.Scene {
     }
 
     if (this.buildingManager.isTileOccupied(gridX, gridY)) return false;
-    if (this.treeManager.hasAnyTreeInBuildingTile(gridX, gridY)) return false;
     if (this.riverManager.isRiver(gridX, gridY)) return false;
     if (tool.id === "fisherman" && !this.riverManager.isNearRiver(gridX, gridY)) return false;
     if (!this.resourceManager.canAfford("wood", tool.cost)) return false;
@@ -316,9 +315,7 @@ export class GameScene extends Phaser.Scene {
         this.riverManager.buildBridge(tile.x, tile.y);
       } else {
         this.buildingManager.placeBuilding(this.placementType, tile.x, tile.y);
-        // Building blocking already excludes bare stumps (canPlaceAt), so any tree left
-        // on this tile at this point is a stump — the building physically replaces it.
-        this.treeManager.clearStumpsInBuildingTile(tile.x, tile.y);
+        this.treeManager.clearTreesInBuildingTile(tile.x, tile.y);
       }
 
       this.game.events.emit("buildingPlaced");
